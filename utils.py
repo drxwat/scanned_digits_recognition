@@ -43,7 +43,7 @@ def get_objects(image, display_results=False, display_intermediate=False):
     sure_bg = cv2.dilate(thresh, kernel, iterations=2)
 
     # Ищем foreground в котором уверены
-    dist_transform = cv2.distanceTransform(thresh, cv2.DIST_L2, 3)
+    dist_transform = cv2.distanceTransform(thresh, cv2.DIST_L2, 5)
     cv2.normalize(dist_transform, dist_transform, 0, 1, cv2.NORM_MINMAX)
     ret, sure_fg = cv2.threshold(dist_transform, 0.2, 255, 0)
     sure_fg = np.uint8(sure_fg)
@@ -91,12 +91,12 @@ def get_objects(image, display_results=False, display_intermediate=False):
         x1, y1 = width_pixels[0], height_pixels[0]
         x2, y2 = width_pixels[-1], height_pixels[-1]
 
-        if x1 != x2 and y1 != y2:  # И такое бывает
+        if (x2 - x1) > 3 and (y2 - y1) > 3:  # Убираем очень маленькие объекты
             objects.append((x1, y1, x2, y2))
 
     # Упорядочиваем объекты слева на право
     objects.sort()
-    objects = fix_objects(objects)
+    objects = merge_vertical_objects(objects)
 
     if display_results:
         cv2.imshow('Colored image', colored_image)
@@ -111,11 +111,11 @@ def get_objects(image, display_results=False, display_intermediate=False):
     return (image[y1:y2, x1:x2] for x1, y1, x2, y2 in objects)
 
 
-def fix_objects(objects_coordinates, concat_percent=0.15):
+def merge_vertical_objects(objects_coordinates, concat_percent=0.5):
     """
-    Склеивает по вертикали наиболее вероятные подобъекты
-    и разделяет по горизонтали наоболее вероятные склеиные объекты
-    @:parameter objects_coordinates tuple of x1, y1, x2, y2 coordinates
+    Склеивает объекты по вертикали, если такие есть
+    @:parameter objects_coordinates list список кортежей координат (x1, y1, x2, y2)
+    @:parameter float - степень увеличения объекта для проверки включения дочерних объектов по оси x
     """
 
     concat_candidates = []
@@ -183,11 +183,11 @@ def get_unified_binary_image(image, new_shape=(30, 30)):
         resize_scale = thresh.shape[0] / new_shape[0]
         new_width = int(thresh.shape[1] / resize_scale)
 
-        # Something gone wrong
-        if new_width > new_shape[1]:
-            raise DetectorError("This image doesn't looks like a digit. It's too wide.")
-
         thresh = cv2.resize(thresh, (new_width, new_shape[0]))
+
+    # Something gone wrong
+    if thresh.shape[1] > new_shape[1]:
+        raise DetectorError("This image doesn't looks like a digit. It's too wide.")
 
     # Размещаем изображение в центре фона
     x_offset = int(new_shape[1] / 2) - int((thresh.shape[1] / 2))
