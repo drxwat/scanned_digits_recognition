@@ -103,7 +103,7 @@ def get_objects(image, display_results=False, display_intermediate=False):
         cv2.waitKey(0)
 
         for x1, y1, x2, y2 in objects:
-            rect = cv2.rectangle(image, (x1, y1), (x2, y2), (0, 0, 255), 1)
+            rect = cv2.rectangle(colored_image, (x1, y1), (x2, y2), (0, 0, 255), 1)
             cv2.imshow('Borders', rect)
 
         cv2.waitKey(0)
