@@ -27,7 +27,7 @@ def get_region(image, roi_height=800):
     return digits_region
 
 
-def get_objects(image, display_results=False, display_intermediate=False):
+def get_objects(image, dilate_kernel_size, erode_scale, display_results=False, display_intermediate=False):
     """
     Возвращает найденные с помощью watershed объекты произвольной величены (как есть)
     @:parameter image numpy.ndarray - исходное изображение
@@ -39,13 +39,13 @@ def get_objects(image, display_results=False, display_intermediate=False):
                               cv2.THRESH_BINARY_INV | cv2.THRESH_OTSU)
 
     # Ищем background в котором уверены
-    kernel = np.ones((3, 3), dtype=np.uint8)
+    kernel = np.ones((dilate_kernel_size, dilate_kernel_size), dtype=np.uint8)
     sure_bg = cv2.dilate(thresh, kernel, iterations=2)
 
     # Ищем foreground в котором уверены
     dist_transform = cv2.distanceTransform(thresh, cv2.DIST_L2, 5)
     cv2.normalize(dist_transform, dist_transform, 0, 1, cv2.NORM_MINMAX)
-    ret, sure_fg = cv2.threshold(dist_transform, 0.2, 255, 0)
+    ret, sure_fg = cv2.threshold(dist_transform, erode_scale, 255, 0)
     sure_fg = np.uint8(sure_fg)
 
     # Вычисляем неизвестную область
@@ -88,6 +88,9 @@ def get_objects(image, display_results=False, display_intermediate=False):
             if i in markers[:, col_index]:
                 width_pixels.append(col_index)
 
+        if len(height_pixels) == 0 or len(width_pixels) == 0:
+            continue
+
         x1, y1 = width_pixels[0], height_pixels[0]
         x2, y2 = width_pixels[-1], height_pixels[-1]
 
@@ -96,7 +99,7 @@ def get_objects(image, display_results=False, display_intermediate=False):
 
     # Упорядочиваем объекты слева на право
     objects.sort()
-    objects = merge_vertical_objects(objects)
+    objects = merge_vertical_objects(objects, 1)
 
     if display_results:
         cv2.imshow('Colored image', colored_image)
@@ -162,7 +165,8 @@ def merge_vertical_objects(objects_coordinates, concat_percent=0.5):
             fixed_objects[i_prim] = concatenated_obj
             moved_objects[i_sec] = i_prim
 
-        del fixed_objects[i_sec]
+        if i_sec in fixed_objects:
+            del fixed_objects[i_sec]
 
     return list(fixed_objects.values())
 
