@@ -31,10 +31,18 @@ image = cv2.imread(path_to_image)
 
 # Отображаем ROI для захвата целевого региона
 digits_region = utils.get_region(image, roi_height=roi_height)
-# Распиливаем на отдельные циферки
-digits = utils.get_objects(digits_region, dilate_kernel_size=dilate_kernel_size, erode_scale=erode_scale,
-                           display_results=True if v or vv else False, display_intermediate=True if vv else False)
-# Маркирует цифры от 0 до 9 и складывает их в файл
-utils.add_to_dataset((utils.get_unified_binary_image(digit) for digit in digits),
-                     n_digits=10,
-                     filename=path_to_output)
+
+try:
+    # Распиливаем на отдельные циферки
+    digits = utils.get_objects(digits_region, dilate_kernel_size=dilate_kernel_size, erode_scale=erode_scale,
+                               display_results=True if v or vv else False, display_intermediate=True if vv else False)
+    # Маркирует цифры от 0 до 9 и складывает их в файл
+    utils.add_to_dataset((utils.get_unified_binary_image(digit) for digit in digits),
+                         n_digits=10,
+                         filename=path_to_output)
+except utils.DetectorError as err:
+    print(err.message)
+    exit(1)
+except utils.DatasetGeneratorError as err:
+    print(err.message)
+    exit(1)

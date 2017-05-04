@@ -36,12 +36,18 @@ digits_region = utils.get_region(image, roi_height=roi_height)
 # Распиливаем на отдельные циферки
 print('Segmenting...')
 
-digits = utils.get_objects(digits_region, dilate_kernel_size=dilate_kernel_size, erode_scale=erode_scale,
-                           display_results=True if v or vv else False, display_intermediate=True if vv else False)
+unified_digits = []
 
-# Унифицируем изображения, что бы классификатор мог их понимать
-unified_digits = np.array(list(map(lambda d: utils.get_unified_binary_image(d, (30, 30)), digits)))
-unified_digits = unified_digits.reshape((unified_digits.shape[0], 30, 30, 1))
+try:
+    digits = utils.get_objects(digits_region, dilate_kernel_size=dilate_kernel_size, erode_scale=erode_scale,
+                               display_results=True if v or vv else False, display_intermediate=True if vv else False)
+
+    # Унифицируем изображения, что бы классификатор мог их понимать
+    unified_digits = np.array(list(map(lambda d: utils.get_unified_binary_image(d, (30, 30)), digits)))
+    unified_digits = unified_digits.reshape((unified_digits.shape[0], 30, 30, 1))
+except utils.DetectorError as err:
+    print('Segmentation failed. Error: {}'.format(err.message))
+    exit(1)
 
 print('Found {} objects.'.format(len(unified_digits)))
 

@@ -191,7 +191,7 @@ def get_unified_binary_image(image, new_shape=(30, 30)):
 
     # Something gone wrong
     if thresh.shape[1] > new_shape[1]:
-        raise DetectorError("This image doesn't looks like a digit. It's too wide.")
+        raise DetectorError("This image doesn't looks like a digit. It's too wide. Try to increase ES parameter.")
 
     # Размещаем изображение в центре фона
     x_offset = int(new_shape[1] / 2) - int((thresh.shape[1] / 2))
